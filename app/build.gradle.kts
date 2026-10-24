@@ -17,12 +17,12 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
 }
 dependencies {
     implementation("commons-net:commons-net:3.11.1")
 }
 
-
-kotlinOptions {
-    jvmTarget = "17"
-}
