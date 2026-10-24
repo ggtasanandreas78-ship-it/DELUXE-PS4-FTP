@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.view.Gravity
 import android.view.View
 import android.widget.*
+import android.widget.FrameLayout
 import android.graphics.drawable.Drawable
 import android.content.Intent
 import android.net.Uri
@@ -32,6 +33,15 @@ class MainActivity : Activity() {
     private lateinit var connectButton: Button
     private var busy = false
     private var transferName = ""
+    private lateinit var screenHost: FrameLayout
+    private lateinit var mainRoot: LinearLayout
+    private lateinit var navBar: LinearLayout
+    private var currentScreen = "home"
+    private val bg = Color.rgb(8, 13, 27)
+    private val panel = Color.rgb(17, 27, 48)
+    private val panel2 = Color.rgb(23, 37, 63)
+    private val blue = Color.rgb(48, 135, 255)
+    private val cyan = Color.rgb(45, 220, 255)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,204 +51,183 @@ class MainActivity : Activity() {
     }
 
     private fun buildUi() {
-        val bg = Color.rgb(3, 10, 25)
-        val cardColor = Color.rgb(8, 25, 48)
-        val blue = Color.rgb(0, 105, 255)
-        val cyan = Color.rgb(40, 190, 255)
-        val muted = Color.rgb(165, 190, 220)
-
-        window.statusBarColor = bg
-        window.navigationBarColor = bg
-
-        fun panel(): android.graphics.drawable.GradientDrawable {
-            return android.graphics.drawable.GradientDrawable().apply {
-                setColor(cardColor)
-                cornerRadius = 22f
-                setStroke(1, Color.rgb(20, 65, 105))
-            }
-        }
-
-        fun label(text: String, size: Float = 14f, color: Int = Color.WHITE) =
-            TextView(this).apply {
-                this.text = text
-                textSize = size
-                setTextColor(color)
-                setPadding(4, 5, 4, 5)
-            }
-
-        fun makeButton(text: String, color: Int = blue) =
-            Button(this).apply {
-                this.text = text
-                textSize = 14f
-                setTextColor(Color.WHITE)
-                background = android.graphics.drawable.GradientDrawable().apply {
-                    setColor(color)
-                    cornerRadius = 18f
-                }
-                isAllCaps = false
-                minHeight = 50
-            }
-
-        fun section(title: String): LinearLayout {
-            val box = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(15, 13, 15, 13)
-                background = panel()
-            }
-            box.addView(label(title, 17f))
-            return box
-        }
-
-        val root = LinearLayout(this).apply {
+        mainRoot = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(15, 10, 15, 10)
             setBackgroundColor(bg)
         }
-
-        val scroll = ScrollView(this)
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
-
-        val logo = ImageView(this).apply {
-            setImageResource(com.deluxe.ps4ftp.R.drawable.deluxe_logo)
-            contentDescription = "DELUXE PS4 FTP"
-            scaleType = ImageView.ScaleType.FIT_CENTER
-        }
-        content.addView(logo, LinearLayout.LayoutParams(76, 76).apply {
-            gravity = Gravity.CENTER_HORIZONTAL
-        })
-
-        content.addView(label("DELUXE PS4 FTP", 25f).apply {
-            gravity = Gravity.CENTER
-            setTextColor(cyan)
-        })
-        content.addView(label("FAST  •  SIMPLE  •  RELIABLE", 11f, muted).apply {
-            gravity = Gravity.CENTER
-        })
-
-        val connection = section("●  اتصال البلايستيشن")
-        connection.addView(label("عنوان IP للبلايستيشن", 12f, muted))
-
-        val row = LinearLayout(this).apply {
+        val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(18), dp(12), dp(18), dp(12))
         }
-
-        host = EditText(this).apply {
-            hint = "مثال: 192.168.68.102"
-            setSingleLine()
-            textSize = 14f
-            setTextColor(Color.WHITE)
-            setHintTextColor(muted)
-            setPadding(12, 0, 12, 0)
-            background = panel()
-            inputType = android.text.InputType.TYPE_CLASS_TEXT
+        val logo = ImageView(this).apply {
+            setImageResource(com.deluxe.ps4ftp.R.drawable.deluxe_logo)
+            contentDescription = "DELUXE logo"
+            scaleType = ImageView.ScaleType.FIT_CENTER
         }
-
-        port = EditText(this).apply {
-            hint = "Port"
-            setSingleLine()
-            setText("2121")
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-            textSize = 14f
-            setTextColor(Color.WHITE)
-            setHintTextColor(muted)
-            setPadding(8, 0, 8, 0)
-            background = panel()
+        header.addView(logo, LinearLayout.LayoutParams(dp(46), dp(46)))
+        val titles = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(10), 0, 0, 0) }
+        titles.addView(label("DELUXE", 20f, cyan))
+        titles.addView(label("PS4 FTP  •  GOLDHEN", 10f, Color.LTGRAY))
+        header.addView(titles, LinearLayout.LayoutParams(0, -2, 1f))
+        val live = TextView(this).apply {
+            text = "● LIVE"; textSize = 11f; setTextColor(Color.rgb(100, 235, 160))
+            setPadding(dp(10), dp(7), dp(10), dp(7)); background = rounded(panel2, 18)
         }
-
-        row.addView(host, LinearLayout.LayoutParams(0, 52, 1f))
-        row.addView(Space(this), LinearLayout.LayoutParams(8, 1))
-        row.addView(port, LinearLayout.LayoutParams(88, 52))
-        connection.addView(row)
-
-        connectButton = makeButton("اتصال بالبلايستيشن")
-        connection.addView(connectButton, LinearLayout.LayoutParams(-1, 52).apply {
-            topMargin = 10
-        })
-
-        status = label("● غير متصل", 13f, Color.rgb(255, 190, 90))
-        connection.addView(status)
-
-        content.addView(connection, LinearLayout.LayoutParams(-1, -2).apply {
-            topMargin = 18
-        })
-
-        val files = section("📁  ملفات PS4")
-        pathLabel = label("المسار الحالي: /", 13f, cyan)
-        files.addView(pathLabel)
-
-        val actions = LinearLayout(this).apply {
+        header.addView(live)
+        mainRoot.addView(header)
+        val line = View(this).apply { setBackgroundColor(Color.rgb(29, 54, 91)) }
+        mainRoot.addView(line, LinearLayout.LayoutParams(-1, dp(1)))
+        screenHost = FrameLayout(this)
+        mainRoot.addView(screenHost, LinearLayout.LayoutParams(-1, 0, 1f))
+        navBar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setPadding(dp(8), dp(7), dp(8), dp(7))
+            background = rounded(Color.rgb(12, 20, 37), 20)
         }
+        val navWrap = LinearLayout(this).apply { setPadding(dp(10), dp(5), dp(10), dp(8)); addView(navBar) }
+        mainRoot.addView(navWrap)
+        setContentView(mainRoot)
+        showScreen("home")
+    }
 
-        actions.addView(makeButton("⬆ إرسال ملف"), LinearLayout.LayoutParams(0, 52, 1f).apply {
-            rightMargin = 5
-        }.also { params ->
-            // يبقى زر الرفع مرتبطاً بوظيفة اختيار الملف الأصلية
-        })
+    private fun label(text: String, size: Float = 14f, color: Int = Color.WHITE) = TextView(this).apply {
+        this.text = text; textSize = size; setTextColor(color)
+    }
 
-        actions.addView(makeButton("⟳ تحديث", Color.rgb(14, 53, 91)),
-            LinearLayout.LayoutParams(0, 52, 1f).apply { leftMargin = 5 })
+    private fun dp(n: Int): Int = (n * resources.displayMetrics.density).toInt()
 
-        val uploadButton = actions.getChildAt(0) as Button
-        uploadButton.setOnClickListener {
-            if (!connected()) {
-                toast("اتصل بالبلاي أولاً")
-            } else {
-                val i = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                    type = "*/*"
-                    addCategory(Intent.CATEGORY_OPENABLE)
+    private fun rounded(color: Int, radius: Int) = android.graphics.drawable.GradientDrawable().apply {
+        setColor(color); cornerRadius = dp(radius).toFloat()
+    }
+
+    private fun card(): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        setPadding(dp(15), dp(14), dp(15), dp(14))
+        background = rounded(panel, 18)
+    }
+
+    private fun styledButton(text: String, primary: Boolean = false, action: () -> Unit): Button = Button(this).apply {
+        this.text = text
+        isAllCaps = false
+        textSize = 14f
+        setTextColor(Color.WHITE)
+        background = rounded(if (primary) blue else panel2, 14)
+        setPadding(dp(12), dp(5), dp(12), dp(5))
+        setOnClickListener { action() }
+    }
+
+    private fun showScreen(screen: String) {
+        currentScreen = screen
+        screenHost.removeAllViews()
+        navBar.removeAllViews()
+        val tabs = listOf("home" to "⌂\nالرئيسية", "files" to "▤\nالملفات", "transfer" to "⇅\nالنقل", "settings" to "⚙\nالإعدادات")
+        tabs.forEach { (key, title) ->
+            val t = TextView(this).apply {
+                text = title; gravity = Gravity.CENTER; textSize = 11f
+                setTextColor(if (key == screen) cyan else Color.rgb(145, 163, 190))
+                setPadding(dp(6), dp(5), dp(6), dp(5))
+                background = if (key == screen) rounded(panel2, 12) else null
+                setOnClickListener { showScreen(key) }
+            }
+            navBar.addView(t, LinearLayout.LayoutParams(0, dp(52), 1f))
+        }
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(16), dp(16), dp(12))
+        }
+        val scroll = ScrollView(this).apply { isFillViewport = true; addView(content) }
+        screenHost.addView(scroll, FrameLayout.LayoutParams(-1, -1))
+        when (screen) {
+            "home" -> {
+                content.addView(label("لوحة التحكم", 25f))
+                content.addView(label("إدارة اتصال البلايستيشن ونقل ملفاتك", 13f, Color.rgb(157, 178, 208)))
+                val hero = card().apply {
+                    background = rounded(Color.rgb(17, 43, 80), 22)
+                    addView(label("DELUXE CONNECT", 12f, cyan))
+                    addView(label("PS4  /  GoldHEN FTP", 22f))
+                    addView(label(if (connected()) "● متصل بالبلايستيشن" else "○ بانتظار الاتصال", 14f, if (connected()) Color.rgb(95, 235, 160) else Color.rgb(255, 195, 90)))
+                    addView(label("${hostTextSaved().ifBlank { "IP غير محدد" }} : ${portTextSaved()}", 12f, Color.LTGRAY))
+                    addView(styledButton(if (connected()) "قطع الاتصال" else "إعداد الاتصال", true) { if (connected()) disconnect() else showScreen("settings") }, LinearLayout.LayoutParams(-1, dp(48)))
                 }
-                startActivityForResult(i, 101)
+                content.addView(hero, marginParams(bottom = 14))
+                val stats = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+                val c1 = card().apply { addView(label("01", 12f, cyan)); addView(label("تصفح الملفات", 15f)); addView(label("محتويات PS4", 11f, Color.LTGRAY)) }
+                val c2 = card().apply { addView(label("02", 12f, cyan)); addView(label("نقل مباشر", 15f)); addView(label("PKG والملفات", 11f, Color.LTGRAY)) }
+                stats.addView(c1, LinearLayout.LayoutParams(0, -1, 1f).apply { rightMargin = dp(6) })
+                stats.addView(c2, LinearLayout.LayoutParams(0, -1, 1f).apply { leftMargin = dp(6) })
+                content.addView(stats, marginParams(bottom = 14))
+                content.addView(label("إجراءات سريعة", 17f))
+                content.addView(styledButton("▤   فتح مدير الملفات", false) { showScreen("files"); if (connected()) refreshRemote() else toast("اتصل بالبلاي أولاً") }, marginParams(top = 8, bottom = 8))
+                content.addView(styledButton("↑   إرسال ملف إلى PS4", true) { pickUpload() }, marginParams(bottom = 8))
+                content.addView(styledButton("⚙   إعداد الاتصال", false) { showScreen("settings") })
+            }
+            "files" -> {
+                content.addView(label("مدير الملفات", 24f))
+                content.addView(label("تصفح ملفات ومجلدات جهاز PS4", 13f, Color.LTGRAY))
+                content.addView(card().apply {
+                    addView(label("المسار الحالي", 11f, cyan))
+                    pathLabel = label("المسار: $currentPath", 13f)
+                    addView(pathLabel)
+                    addView(styledButton("↻  تحديث القائمة", true) { if (connected()) refreshRemote() else toast("اتصل بالبلاي أولاً") }, marginParams(top = 10))
+                }, marginParams(top = 12, bottom = 12))
+                list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+                content.addView(list)
+                if (connected()) refreshRemote() else content.addView(label("اتصل من الرئيسية أو الإعدادات حتى تظهر الملفات.", 13f, Color.rgb(255, 195, 90)))
+            }
+            "transfer" -> {
+                content.addView(label("مركز النقل", 24f))
+                content.addView(label("متابعة رفع وتنزيل الملفات", 13f, Color.LTGRAY))
+                content.addView(card().apply {
+                    addView(label("حالة العملية", 12f, cyan))
+                    progress = ProgressBar(this@MainActivity, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100 }
+                    addView(progress, LinearLayout.LayoutParams(-1, dp(10)).apply { topMargin = dp(14); bottomMargin = dp(12) })
+                    progressText = label("جاهز للنقل", 14f)
+                    addView(progressText)
+                    addView(styledButton("↑  اختيار ملف للرفع", true) { pickUpload() }, marginParams(top = 16))
+                    addView(styledButton("▤  استعراض ملفات PS4", false) { showScreen("files"); if (connected()) refreshRemote() else toast("اتصل بالبلاي أولاً") }, marginParams(top = 8))
+                }, marginParams(top = 14))
+            }
+            else -> {
+                content.addView(label("الإعدادات", 24f))
+                content.addView(label("بيانات اتصال خادم GoldHEN", 13f, Color.LTGRAY))
+                content.addView(card().apply {
+                    addView(label("عنوان IP للبلايستيشن", 13f, cyan))
+                    host = EditText(this@MainActivity).apply {
+                        hint = "مثال: 192.168.68.102"; setSingleLine(); textSize = 15f
+                        setTextColor(Color.WHITE); setHintTextColor(Color.GRAY); setPadding(dp(12), 0, dp(12), 0)
+                        background = rounded(panel2, 12); setText(hostTextSaved())
+                    }
+                    addView(host, LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(8); bottomMargin = dp(14) })
+                    addView(label("Port FTP", 13f, cyan))
+                    port = EditText(this@MainActivity).apply {
+                        hint = "2121"; setSingleLine(); inputType = 2; textSize = 15f
+                        setTextColor(Color.WHITE); setHintTextColor(Color.GRAY); setPadding(dp(12), 0, dp(12), 0)
+                        background = rounded(panel2, 12); setText(portTextSaved())
+                    }
+                    addView(port, LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(8); bottomMargin = dp(14) })
+                    status = label(if (connected()) "● متصل" else "● غير متصل", 13f, if (connected()) Color.GREEN else Color.rgb(255, 195, 90))
+                    addView(status)
+                    connectButton = styledButton(if (connected()) "قطع الاتصال" else "حفظ والاتصال", true) { if (connected()) disconnect() else connect() }
+                    addView(connectButton, LinearLayout.LayoutParams(-1, dp(50)).apply { topMargin = dp(14) })
+                }, marginParams(top = 14))
+                content.addView(label("ملاحظة: تأكد أن الجهازين على نفس شبكة Wi‑Fi وأن FTP مفعّل في GoldHEN.", 12f, Color.LTGRAY), marginParams(top = 12))
             }
         }
+    }
 
-        actions.getChildAt(1).setOnClickListener {
-            if (connected()) refreshRemote() else toast("اتصل بالبلاي أولاً")
-        }
+    private fun hostTextSaved(): String = if (::host.isInitialized) host.text.toString() else ""
+    private fun portTextSaved(): String = if (::port.isInitialized) port.text.toString() else "2121"
 
-        files.addView(actions)
-        files.addView(label("اضغط على مجلد لاستعراض محتوياته", 12f, muted))
+    private fun marginParams(top: Int = 0, bottom: Int = 0): LinearLayout.LayoutParams =
+        LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(top); bottomMargin = dp(bottom) }
 
-        list = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
-
-        files.addView(list)
-        content.addView(files, LinearLayout.LayoutParams(-1, -2).apply {
-            topMargin = 14
-        })
-
-        val transfer = section("⇅  حالة النقل")
-        progress = ProgressBar(
-            this, null, android.R.attr.progressBarStyleHorizontal
-        ).apply {
-            max = 100
-            progress = 0
-            progressTintList = android.content.res.ColorStateList.valueOf(blue)
-        }
-        transfer.addView(progress, LinearLayout.LayoutParams(-1, 12).apply {
-            topMargin = 8
-        })
-
-        progressText = label("جاهز للنقل", 13f, cyan)
-        transfer.addView(progressText)
-        transfer.addView(label("تأكد أن الجهازين على نفس شبكة Wi-Fi", 11f, muted))
-
-        content.addView(transfer, LinearLayout.LayoutParams(-1, -2).apply {
-            topMargin = 14
-            bottomMargin = 15
-        })
-
-        scroll.addView(content)
-        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
-        setContentView(root)
-
-        connectButton.setOnClickListener {
-            if (connected()) disconnect() else connect()
-        }
+    private fun pickUpload() {
+        if (!connected()) { toast("اتصل بالبلاي أولاً"); showScreen("settings"); return }
+        showScreen("transfer")
+        val i = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type = "*/*"; addCategory(Intent.CATEGORY_OPENABLE) }
+        startActivityForResult(i, 101)
     }
 
     private fun connected() = ftp?.isConnected == true
@@ -255,7 +244,7 @@ class MainActivity : Activity() {
                 client = FTPClient()
                 client.connectTimeout = 7000
                 client.defaultTimeout = 7000
-                client.dataTimeout = java.time.Duration.ofSeconds(15)
+                client.dataTimeout = 15000
                 client.connect(h, p)
                 if (!client.login("anonymous", "")) {
                     // GoldHEN FTP commonly permits anonymous login; if rejected, show the server reply.
@@ -271,7 +260,7 @@ class MainActivity : Activity() {
                     status.setTextColor(Color.rgb(90, 230, 150))
                     connectButton.text = "قطع الاتصال"
                     connectButton.isEnabled = true
-                    refreshRemote()
+                    if (::list.isInitialized && currentScreen == "files") refreshRemote()
                 }
             } catch (e: Exception) {
                 try { if (client?.isConnected == true) client.disconnect() } catch (_: Exception) {}
@@ -290,10 +279,11 @@ class MainActivity : Activity() {
             try { if (ftp?.isConnected == true) ftp?.disconnect() } catch (_: Exception) {}
             ftp = null
             runOnUiThread {
-                list.removeAllViews(); status.text = "غير متصل"
-                status.setTextColor(Color.rgb(255, 190, 90))
-                connectButton.text = "اتصال بالبلايستيشن"
-                pathLabel.text = "المسار: /"
+                if (::list.isInitialized) list.removeAllViews()
+                if (::status.isInitialized) { status.text = "غير متصل"; status.setTextColor(Color.rgb(255, 190, 90)) }
+                if (::connectButton.isInitialized) connectButton.text = "اتصال بالبلايستيشن"
+                if (::pathLabel.isInitialized) pathLabel.text = "المسار: /"
+                if (currentScreen == "home") showScreen("home")
             }
         }
     }
@@ -301,26 +291,26 @@ class MainActivity : Activity() {
     private fun refreshRemote() {
         val c = ftp ?: return
         val path = currentPath
-        status.text = "جاري قراءة ملفات PS4..."
+        if (::status.isInitialized) status.text = "جاري قراءة ملفات PS4..."
         worker.execute {
             try {
                 val files = c.listFiles(path)
                 runOnUiThread {
                     list.removeAllViews()
-                    val parent = Button(this).apply {
-                        text = "⬆ مجلد أعلى"
-                        setOnClickListener {
+                    val parent = styledButton("↑  مجلد أعلى", false) {
+
                             val up = path.substringBeforeLast('/', "")
                             currentPath = if (up.isBlank()) "/" else up
-                            pathLabel.text = "المسار: $currentPath"; refreshRemote()
+                            if (::pathLabel.isInitialized) pathLabel.text = "المسار: $currentPath"; refreshRemote()
                         }
-                    }
-                    list.addView(parent)
+                    list.addView(parent, marginParams(bottom = 6))
                     files.sortedWith(compareBy<FTPFile> { !it.isDirectory }.thenBy { it.name.lowercase(Locale.ROOT) }).forEach { f ->
-                        val b = Button(this).apply {
-                            text = (if (f.isDirectory) "📁 " else "📄 ") + f.name +
-                                if (f.isFile) "  (${human(f.size)})" else ""
-                            gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                        val b = LinearLayout(this).apply {
+                            orientation = LinearLayout.VERTICAL
+                            setPadding(dp(14), dp(12), dp(14), dp(12))
+                            background = rounded(panel2, 14)
+                            addView(label((if (f.isDirectory) "📁  " else "📄  ") + f.name, 14f))
+                            if (f.isFile) addView(label(human(f.size), 11f, Color.LTGRAY))
                             setOnClickListener {
                                 if (f.isDirectory) {
                                     currentPath = if (path == "/") "/${f.name}" else "$path/${f.name}"
@@ -339,19 +329,19 @@ class MainActivity : Activity() {
                                 true
                             }
                         }
-                        list.addView(b)
+                        list.addView(b, marginParams(bottom = 7))
                     }
-                    status.text = "نجح الاتصال • ${files.size} عنصر"
-                    status.setTextColor(Color.rgb(90, 230, 150))
+                    if (::status.isInitialized) { status.text = "نجح الاتصال • ${files.size} عنصر"; status.setTextColor(Color.rgb(90, 230, 150)) }
                 }
             } catch (e: Exception) {
-                runOnUiThread { status.text = "تعذر عرض الملفات: ${e.message}" }
+                runOnUiThread { if (::status.isInitialized) status.text = "تعذر عرض الملفات: ${e.message}" else toast("تعذر عرض الملفات: ${e.message}") }
             }
         }
     }
 
     private fun chooseDownload(f: FTPFile) {
         transferName = f.name
+        showScreen("transfer")
         val i = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE); type = "application/octet-stream"
             putExtra(Intent.EXTRA_TITLE, f.name)
@@ -382,7 +372,7 @@ class MainActivity : Activity() {
                     out.use { os -> copyProgress(ins, os, size) }
                     if (!c.completePendingCommand()) throw Exception("فشل إكمال الرفع: ${c.replyString}")
                 }
-                runOnUiThread { progress.progress = 100; progressText.text = "اكتمل رفع $name"; refreshRemote() }
+                runOnUiThread { progress.progress = 100; progressText.text = "اكتمل رفع $name"; if (::list.isInitialized && currentScreen == "files") refreshRemote() }
             } catch (e: Exception) {
                 runOnUiThread { progressText.text = "فشل الرفع: ${e.message}" }
             }
