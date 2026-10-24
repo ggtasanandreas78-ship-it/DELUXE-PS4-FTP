@@ -244,7 +244,7 @@ class MainActivity : Activity() {
                 client = FTPClient()
                 client.connectTimeout = 7000
                 client.defaultTimeout = 7000
-                client.dataTimeout = 15000
+                client.dataTimeout = java.time.Duration.ofSeconds(15)
                 client.connect(h, p)
                 if (!client.login("anonymous", "")) {
                     // GoldHEN FTP commonly permits anonymous login; if rejected, show the server reply.
